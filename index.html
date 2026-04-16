@@ -155,7 +155,7 @@ async function dbDelete(id){
 async function dbLog(acao,detalhe){await fetch(SB+"/rest/v1/logs",{method:"POST",headers:H,body:JSON.stringify({perfil,acao,detalhe})});}
 async function dbFetchLogs(){var r=await fetch(SB+"/rest/v1/logs?select=*&order=criado_em.desc&limit=100",{headers:H});if(!r.ok)throw new Error("Erro "+r.status);return r.json();}
 async function dbFetchUsuarios(){var r=await fetch(SB+"/rest/v1/usuarios?select=*&order=nome",{headers:H});if(!r.ok)throw new Error("Erro "+r.status);return r.json();}
-async function dbSaveUsuario(u){var r=await fetch(SB+"/rest/v1/usuarios",{method:"POST",headers:Object.assign({"Prefer":"resolution=merge-duplicates"},H),body:JSON.stringify(u));if(!r.ok)throw new Error("Erro "+r.status);}
+async function dbSaveUsuario(u){var r=await fetch(SB+"/rest/v1/usuarios",{method:"POST",headers:Object.assign({"Prefer":"resolution=merge-duplicates"},H),body:JSON.stringify(u)});if(!r.ok)throw new Error("Erro "+r.status);}
 async function dbDeleteUsuario(id){var r=await fetch(SB+"/rest/v1/usuarios?id=eq."+id,{method:"DELETE",headers:H});if(!r.ok)throw new Error("Erro "+r.status);}
 async function loadResponsaveis(){
   try{
