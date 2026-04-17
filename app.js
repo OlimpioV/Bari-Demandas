@@ -467,16 +467,21 @@ function renderModal(){
   var newCmt=canComment()?'<div style="display:flex;gap:9px;margin-top:6px;"><div style="width:28px;height:28px;border-radius:50%;background:var(--bt-navy);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">'+emailUser.charAt(0).toUpperCase()+'</div><div style="flex:1;"><div class="cmt-wrap"><textarea id="new-cmt" rows="2" placeholder="Escreva um comentário..."></textarea></div><button class="btn btn-primary" style="font-size:12px;padding:5px 14px;" onclick="submitCmt(\''+id+'\')">Salvar</button></div></div>':"";
   var sideHTML='<div class="mslabel">Ações</div>'+(ce?'<button class="msbtn" onclick="confirmDelCard(\''+id+'\')" style="color:#dc2626;">'+ic('trash')+' Excluir card</button>':"")+'<div class="mslabel">Status</div>'+(ce?'<select style="font-size:12px;font-weight:600;padding:7px 10px;border-radius:8px;border:none;width:100%;font-family:inherit;background:'+col.badgeBg+';color:'+col.badgeText+';" onchange="updateStatus(\''+id+'\',this.value)">'+sO+'</select>':'<div style="font-size:12px;font-weight:600;padding:7px 10px;border-radius:8px;background:'+col.badgeBg+';color:'+col.badgeText+';display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:'+col.dot+';"></span>'+col.label+'</div>')+'<div class="mslabel">Etiquetas</div>'+(ce?'<div style="background:#fff;border-radius:8px;padding:8px;display:flex;flex-wrap:wrap;">'+tiposOpts+'</div>':(card.tipos&&card.tipos.length?'<div style="display:flex;flex-direction:column;gap:4px;">'+card.tipos.map(function(t){var c=TC[t]||PALETA[0];return '<span style="font-size:11px;font-weight:600;padding:5px 9px;border-radius:4px;background:'+c.bg+';border:1px solid '+c.border+';color:'+c.text+';">'+t+'</span>';}).join("")+'</div>':'<span style="font-size:12px;color:var(--text3);">Nenhuma</span>'));
   var hasTarefas=(card.tarefas&&card.tarefas.length>0);
-  var mw=hasTarefas?"min(96vw,920px)":"min(96vw,780px)";
-  var coverBtn=ce?"<button onclick=\"openCoverPicker('"+id+"')\" style=\"position:absolute;top:10px;left:12px;background:rgba(0,0,0,.25);border:none;color:#fff;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px;\">"+ic("palette")+" Cor</button>":"";
-  var tarefasCol=hasTarefas?"<div class=\"modal-side\" style=\"background:#ebecf0;padding:14px 12px;min-width:220px;max-width:240px;\">"+buildTarefasHTML(card,ce)+"</div>":(ce?"<div class=\"modal-side\" style=\"background:#ebecf0;padding:14px 12px;min-width:200px;\"><div style=\"font-size:11px;font-weight:700;color:#5e6c84;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:5px;\">"+ic("check")+" Tarefas</div><div style=\"font-size:12px;color:#94a3b8;font-style:italic;margin-bottom:10px;\">Nenhuma tarefa</div><button onclick=\"openAddTarefa('"+id+"')\" class=\"msbtn\">"+ic("plus")+" Adicionar tarefa</button></div>":"");
-  var gridCols="1fr 210px"+(hasTarefas||ce?" 1fr":"");
+  var mw=hasTarefas?"min(96vw,940px)":"min(96vw,780px)";
+  var coverBtn=ce?'<button onclick="openCoverPicker(\''+id+'\')" style="position:absolute;top:10px;left:12px;background:rgba(0,0,0,.25);border:none;color:#fff;border-radius:8px;padding:6px 9px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px;">'+ic("palette")+' Cor</button>':"";
+  var tarefasPanel=hasTarefas
+    ?'<div style="background:#ebecf0;padding:14px 12px;min-width:220px;overflow-y:auto;">'+buildTarefasHTML(card,ce)+'</div>'
+    :(ce?'<div style="background:#ebecf0;padding:14px 12px;min-width:200px;"><div style="font-size:11px;font-weight:700;color:#5e6c84;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:5px;">'+ic("check")+' Tarefas</div><div style="font-size:12px;color:#94a3b8;font-style:italic;margin-bottom:10px;">Nenhuma tarefa</div><button onclick="openAddTarefa(\''+id+'\')" class="msbtn">'+ic("plus")+' Adicionar tarefa</button></div>':"");
+  var gridStyle=ce?"display:grid;grid-template-columns:1fr 210px 1fr;":"display:grid;grid-template-columns:1fr 210px;";
   document.getElementById("modal-container").innerHTML=
-    '<div class="modal-overlay" onclick="closeModal(event)"><div class="modal-trello" style="width:'+mw+';" onclick="event.stopPropagation()"><div class="modal-cover" style="background:'+cv+';" id="mcover">'+coverBtn+'<button class="mcclose" onclick="closeModal()">'+ic("close")+' Fechar</button></div><div class="modal-body" style="grid-template-columns:'+gridCols+';"><div class="modal-main">'
+    '<div class="modal-overlay" onclick="closeModal(event)"><div class="modal-trello" style="width:'+mw+';" onclick="event.stopPropagation()"><div class="modal-cover" style="background:'+cv+';" id="mcover">'+coverBtn+'<button class="mcclose" onclick="closeModal()">'+ic("close")+' Fechar</button></div><div style="'+gridStyle+'"><div class="modal-main">'
+    +'<div class="msec">'
     +(ce?'<div class="ititle" id="mt-disp" onclick="startEditTitle(\''+id+'\')">'+card.titulo+'</div><textarea class="ititle-inp" id="mt-inp" rows="2" onkeydown="titleKd(event,\''+id+'\')">'+card.titulo+'</textarea>':'<div class="ititle" style="cursor:default;">'+card.titulo+'</div>')
-    +'</div><div class="msec"><div class="msec-title">'+ic("edit")+' Observações</div>'
+    +'</div>'
+    +'<div class="msec"><div class="msec-title">'+ic("edit")+' Observações</div>'
     +(ce?'<div class="obs-block" id="obs-block-'+id+'" onclick="startEditObs(\''+id+'\')">'+(card.obs?'<div class="obs-text" id="obs-txt-'+id+'">'+card.obs+'</div>':'<div class="obs-ph" id="obs-txt-'+id+'">Clique para adicionar observações...</div>')+'<textarea id="obs-inp-'+id+'" class="obs-ta" style="display:none;" onkeydown="obsKd(event,\''+id+'\')" placeholder="Escreva observações... (Ctrl+Enter salva, Esc cancela)">'+(card.obs||"")+'</textarea></div>':(card.obs?'<div class="obs-block" style="cursor:default;"><div class="obs-text">'+card.obs+'</div></div>':""))
-    +'</div><div class="msec"><div class="msec-title">'+ic("briefcase")+' Detalhes</div><div class="info-grid">'
+    +'</div>'
+    +'<div class="msec"><div class="msec-title">'+ic("briefcase")+' Detalhes</div><div class="info-grid">'
     +icCell(id,"clienteNum","Cliente",card.clienteNum?(card.clienteNum+(cn?" \u2014 "+cn:"")):"—",ce,"ac")
     +icCell(id,"casoNum","Caso",card.casoNum?(card.casoNum+(cd?" \u2014 "+trunc(cd,40):"")):"—",ce,"ac")
     +icCell(id,"responsavel","Responsável",card.responsavel||"—",ce,"sel",rO)
@@ -484,7 +489,12 @@ function renderModal(){
     +icCell(id,"dataInicio","Início",card.dataInicio||"—",ce,"date")
     +icCell(id,"dataFim","Encerramento",card.dataFim||"—",ce,"date")
     +icCell(id,"horas","Horas",card.horas?(card.horas+"h"):"—",ce,"nstep")
-    +'</div></div><div class="msec"><div class="msec-title">'+ic("comment")+' Comentários <span style="background:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:500;margin-left:3px;">'+cmts.length+'</span></div>'+cmtHTML+newCmt+'</div></div><div class="modal-side">'+sideHTML+'</div>'+tarefasCol+'</div></div></div>';
+    +'</div></div>'
+    +'<div class="msec"><div class="msec-title">'+ic("comment")+' Comentários <span style="background:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:500;margin-left:3px;">'+cmts.length+'</span></div>'+cmtHTML+newCmt+'</div>'
+    +'</div>'
+    +'<div class="modal-side">'+sideHTML+'</div>'
+    +tarefasPanel
+    +'</div></div></div>';
 }
 function closeModal(e){if(e&&e.target!==document.querySelector(".modal-overlay"))return;document.getElementById("modal-container").innerHTML="";_ef=null;_ecid=null;}
 async function submitCmt(cardId){var el=document.getElementById("new-cmt");var txt=(el?el.value:"").trim();if(!txt){toast("Escreva um comentário",true);return;}try{await addCmt(cardId,txt);toast("Adicionado!");renderModal();}catch(e){toast("Erro",true);}}
