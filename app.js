@@ -386,6 +386,29 @@ function openEditTarefa(cardId,tarefaId){
   var t=(card.tarefas||[]).find(function(x){return x.id===tarefaId;});if(!t)return;
   _buildTarefaForm(cardId,t);
 }
+function toggleTarefaEdit(tid){
+  var ep=document.getElementById("tep-"+tid);var cv=document.getElementById("tcv-"+tid);
+  var ch=document.getElementById("tch-"+tid);
+  if(!ep)return;
+  var open=ep.style.display==="flex";
+  ep.style.display=open?"none":"flex";
+  if(cv)cv.style.cursor=open?"pointer":"default";
+  if(ch)ch.style.transform=open?"rotate(0deg)":"rotate(180deg)";
+}
+async function saveTarefaInline(cardId,tarefaId){
+  var card=cards.find(function(c){return c.id===cardId;});if(!card)return;
+  var texto=(document.getElementById("ti-txt-"+tarefaId).value||"").trim();
+  if(!texto){toast("Informe a descrição",true);return;}
+  var fields={
+    texto:texto,
+    responsavel:document.getElementById("ti-resp-"+tarefaId).value,
+    status:document.getElementById("ti-st-"+tarefaId).value,
+    dataInicio:document.getElementById("ti-di-"+tarefaId).value,
+    dataFim:document.getElementById("ti-df-"+tarefaId).value
+  };
+  card.tarefas=(card.tarefas||[]).map(function(t){return t.id===tarefaId?Object.assign({},t,fields):t;});
+  try{await dbUpsert(card);toast("Salvo!");renderModal();}catch(e){toast("Erro",true);}
+}
 function buildTarefasHTML(card,ce){
   var tarefas=getTarefas(card);
   var today=new Date().toISOString().split("T")[0];
@@ -397,26 +420,56 @@ function buildTarefasHTML(card,ce){
   tarefas.forEach(function(t){
     var col=COLS.find(function(co){return co.id===t.status;})||{label:"?",dot:"#94a3b8",badgeBg:"#f1f5f9",badgeText:"#475569"};
     var atrasada=t.status!=="concluido"&&t.dataFim&&t.dataFim<today;
-    var bLeft=atrasada?"#dc2626":"transparent";
-    var btnEdit=ce?"<button onclick=\"openEditTarefa('"+cid+"','"+t.id+"')\" style=\"background:none;border:none;cursor:pointer;color:#94a3b8;padding:0;flex-shrink:0;\">"+ic("edit")+"</button>":"";
-    html+="<div style=\"background:#fff;border-radius:8px;margin-bottom:7px;border-left:3px solid "+bLeft+";overflow:hidden;\"><div style=\"padding:8px 10px;\">";
-    html+="<div style=\"display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:5px;\">";
-    html+="<div style=\"font-size:12px;font-weight:600;color:#172b4d;flex:1;\">"+t.texto+"</div>"+btnEdit+"</div>";
-    html+="<div style=\"display:flex;flex-direction:column;gap:3px;\">";
-    html+="<div><span style=\"display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:"+col.badgeBg+";color:"+col.badgeText+";\"><span style=\"width:6px;height:6px;border-radius:50%;background:"+col.dot+";flex-shrink:0;\"></span>"+col.label+"</span></div>";
-    if(t.responsavel)html+="<div style=\"font-size:10px;font-weight:600;background:#f4f5f7;border-radius:4px;padding:2px 6px;color:#5e6c84;display:inline-block;width:fit-content;\">"+t.responsavel+"</div>";
+    var concluida=t.status==="concluido";
+    var bLeft=atrasada?"#dc2626":concluida?"#22c55e":"transparent";
+    var titleStyle="font-size:12px;font-weight:600;color:"+(concluida?"#94a3b8":"#172b4d")+";flex:1;"+(concluida?"text-decoration:line-through;":"");
+    var dc=atrasada?"#dc2626":"#94a3b8";var fw=atrasada?"font-weight:700;":"";
+    var dateStr="";
     if(t.dataInicio||t.dataFim){
-      var dc=atrasada?"#dc2626":"#94a3b8";var fw=atrasada?"font-weight:700;":"";
-      var ds="<span style=\"font-size:10px;color:"+dc+";"+fw+"\">";
-      if(t.dataInicio)ds+=t.dataInicio.split("-").reverse().join("/");
-      if(t.dataInicio&&t.dataFim)ds+=" \u2192 ";
-      if(t.dataFim)ds+=t.dataFim.split("-").reverse().join("/");
-      ds+="</span>";html+="<div>"+ds+"</div>";
+      dateStr="<span style=\"font-size:10px;color:"+dc+";"+fw+"\">";
+      if(t.dataInicio)dateStr+=t.dataInicio.split("-").reverse().join("/");
+      if(t.dataInicio&&t.dataFim)dateStr+=" \u2192 ";
+      if(t.dataFim)dateStr+=t.dataFim.split("-").reverse().join("/");
+      dateStr+="</span>";
     }
-    html+="</div></div></div>";
+    var chevron="<svg id=\"tch-"+t.id+"\" width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#94a3b8\" stroke-width=\"2.5\" stroke-linecap=\"round\" style=\"flex-shrink:0;transition:transform .2s;\"><polyline points=\"6 9 12 15 18 9\"/></svg>";
+
+    // VIEW row - clicável
+    html+="<div style=\"background:#fff;border-radius:8px;margin-bottom:7px;border-left:3px solid "+bLeft+";overflow:hidden;\">";
+    html+="<div id=\"tcv-"+t.id+"\" style=\"padding:8px 10px;cursor:"+(ce?"pointer":"default")+";\" "+(ce?"onclick=\"toggleTarefaEdit('"+t.id+"')\"":"")+">";
+    html+="<div style=\"display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:5px;\">";
+    html+="<div style=\""+titleStyle+"\">"+t.texto+"</div>"+(ce?chevron:"")+"</div>";
+    html+="<div style=\"display:flex;align-items:center;gap:5px;flex-wrap:wrap;\">";
+    html+="<span style=\"display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:"+col.badgeBg+";color:"+col.badgeText+";\"><span style=\"width:6px;height:6px;border-radius:50%;background:"+col.dot+";flex-shrink:0;\"></span>"+col.label+"</span>";
+    if(t.responsavel)html+="<span style=\"font-size:10px;font-weight:600;background:#f4f5f7;border-radius:4px;padding:2px 6px;color:#5e6c84;\">"+t.responsavel+"</span>";
+    if(dateStr)html+=dateStr;
+    html+="</div></div>";
+
+    if(ce){
+      // EDIT panel - inline expandível
+      var sOpts=COLS.map(function(co){return "<option value=\""+co.id+"\""+(t.status===co.id?" selected":"")+">"+co.label+"</option>";}).join("");
+      var rOpts="<option value=\"\">Sem responsável</option>"+responsaveis.map(function(r){return "<option value=\""+r+"\""+(t.responsavel===r?" selected":"")+">"+r+"</option>";}).join("");
+      html+="<div id=\"tep-"+t.id+"\" style=\"display:none;flex-direction:column;gap:8px;padding:10px 12px;border-top:1px solid #f0f0f0;background:#fafafa;\">";
+      html+="<div><div style=\"font-size:10px;font-weight:700;color:#5e6c84;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;\">Descrição</div>";
+      html+="<input id=\"ti-txt-"+t.id+"\" value=\""+t.texto.replace(/"/g,'&quot;')+"\" style=\"width:100%;font-size:12px;padding:5px 8px;border:1.5px solid #dfe1e6;border-radius:6px;font-family:inherit;color:#172b4d;outline:none;\"/></div>";
+      html+="<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:6px;\">";
+      html+="<div><div style=\"font-size:10px;font-weight:700;color:#5e6c84;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;\">Responsável</div><select id=\"ti-resp-"+t.id+"\" style=\"width:100%;font-size:12px;padding:5px 8px;border:1.5px solid #dfe1e6;border-radius:6px;font-family:inherit;color:#172b4d;\">"+rOpts+"</select></div>";
+      html+="<div><div style=\"font-size:10px;font-weight:700;color:#5e6c84;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;\">Status</div><select id=\"ti-st-"+t.id+"\" style=\"width:100%;font-size:12px;padding:5px 8px;border:1.5px solid #dfe1e6;border-radius:6px;font-family:inherit;color:#172b4d;\">"+sOpts+"</select></div>";
+      html+="</div>";
+      html+="<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:6px;\">";
+      html+="<div><div style=\"font-size:10px;font-weight:700;color:#5e6c84;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;\">Início</div><input type=\"date\" id=\"ti-di-"+t.id+"\" value=\""+(t.dataInicio||"")+"\" style=\"width:100%;font-size:12px;padding:5px 8px;border:1.5px solid #dfe1e6;border-radius:6px;font-family:inherit;\"/></div>";
+      html+="<div><div style=\"font-size:10px;font-weight:700;color:#5e6c84;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;\">Vencimento</div><input type=\"date\" id=\"ti-df-"+t.id+"\" value=\""+(t.dataFim||"")+"\" style=\"width:100%;font-size:12px;padding:5px 8px;border:1.5px solid #dfe1e6;border-radius:6px;font-family:inherit;\"/></div>";
+      html+="</div>";
+      html+="<div style=\"display:flex;justify-content:space-between;align-items:center;\">";
+      html+="<button onclick=\"modalConfirm('Excluir esta tarefa?',function(){delTarefa('"+cid+"','"+t.id+"');})\" style=\"font-size:11px;font-weight:600;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:5px 10px;cursor:pointer;\">Excluir</button>";
+      html+="<button onclick=\"saveTarefaInline('"+cid+"','"+t.id+"')\" style=\"font-size:11px;font-weight:600;background:#253f4f;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;\">Salvar</button>";
+      html+="</div></div>";
+    }
+    html+="</div>";
   });
   return html;
 }
+
 // ── COVER COLOR ──
 function openCoverPicker(cardId){
   var card=cards.find(function(c){return c.id===cardId;});if(!card)return;
